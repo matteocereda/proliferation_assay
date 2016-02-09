@@ -1,12 +1,4 @@
-library(shiny)
-library(shinyTable)
-library(matrixStats)
-library(dplyr)
-library(tidyr)
-library(ggplot2)
-options(scipen=3)
-
-
+rea
 shinyServer(function(input, output, session) {
   
  current = reactiveValues(gene=NULL, replicate=NULL, experiment=NULL, tbl=NULL, p=NULL)
@@ -24,20 +16,41 @@ shinyServer(function(input, output, session) {
  }
  
  
-  output$ogene = renderText({return(input$gene)})
+ 
+  output$ogene = renderText({return(input$submit)})
   
-
-  output$tbl <- renderHtable({
-    if (is.null(input$tbl)){
+  Data = reactive({
+    if (input$submit > 0) {
       tbl <- data.frame(matrix(0, nr=input$timepoint, nc=input$replicate*2))
       colnames(tbl) = c(rep("Negative",input$replicate), rep(input$gene,input$replicate))
       current$tbl <<- tbl
-    } else{
-      current$tbl <<- input$tbl
+      return(current$tbl)
+    }else{
+      if (is.null(input$tbl)){
+        tbl <- data.frame(matrix(0, nr=input$timepoint, nc=input$replicate*2))
+        colnames(tbl) = c(rep("Negative",input$replicate), rep(input$gene,input$replicate))
+        current$tbl <<- tbl
+      } else{
+        current$tbl <<- input$tbl
+      }
+      print(current$tbl)
+      return(current$tbl)
     }
-    print(current$tbl)
-    return(current$tbl)
-  })  
+  })
+ 
+
+  output$tbl <- renderHtable({Data()})
+#   output$tbl <- renderHtable({
+#     if (is.null(input$tbl)){
+#       tbl <- data.frame(matrix(0, nr=input$timepoint, nc=input$replicate*2))
+#       colnames(tbl) = c(rep("Negative",input$replicate), rep(input$gene,input$replicate))
+#       current$tbl <<- tbl
+#     } else{
+#       current$tbl <<- input$tbl
+#     }
+#     print(current$tbl)
+#     return(current$tbl)
+#   })  
   
   output$assay = renderPlot({
     
@@ -88,7 +101,7 @@ shinyServer(function(input, output, session) {
       dev.off()
     }
   )
-  
+ 
   
 #   output$tbl <- renderHtable({
 #      cols <- input$replicate*2

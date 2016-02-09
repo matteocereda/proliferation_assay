@@ -11,7 +11,7 @@ shinyUI(pageWithSidebar(
       textInput('gene',label = h5("Enter gene name"), value = "Gene"),
        numericInput('replicate',label = h5("Enter number of replicates"), value = 3),
        numericInput('timepoint',label = h5("Enter number of time points"), value = 4),
-       actionButton("update", "Update Table")
+       actionButton("submit", "Update Table")
   ),
   
   # Show the simple table
