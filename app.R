@@ -4,6 +4,7 @@ library(matrixStats)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
+
 options(scipen=3)
 
 
@@ -57,13 +58,13 @@ adminUsers <- c("admin", "prof")
 panel_width = 2
 result_with = 10
 shinyApp(
-  ui = fluidPage(
-    shinyjs::useShinyjs(),
+  ui = fluidPage(navbarPage("MATTEO",
+                            titlePanel("Proliferation assay curve"),
+                            p("This app is develop to help people to draw curves with R"),
+                            shinyjs::useShinyjs(),
     shinyjs::inlineCSS(appCSS),
 
-    titlePanel("Proliferation assay curve"),
-    p("This app is develop to help people to draw curves with R"),
-    
+    tabPanel("Proliferation_assay",
     fluidRow(
       column(panel_width,
              div(
@@ -115,7 +116,11 @@ shinyApp(
             )
       )
     )
-    
+    ),
+  tabPanel("Expression"
+  )
+  )
+
     
   ),
   
