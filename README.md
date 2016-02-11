@@ -1,6 +1,7 @@
-Proliferation assay
-===================
-This is a R Shiny application to visualise cell proliferation curves. 
+Proliferation assay and Gene Expression assessment
+====================================================
+This is a R Shiny application to visualise cell proliferation curves and gene expression (i.e. qPCR assessements) quantification bar plots. 
+The application dynamically get the number of experiment conditions, of genes and the experiment results and draw the corresponding plots.
 
 
 ## Webserver
