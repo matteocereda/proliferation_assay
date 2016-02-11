@@ -19,80 +19,46 @@ labelMandatory <- function(label) {
   tagList(label,span("*", class = "mandatory_star"))
 }
 
-# get current Epoch time
-epochTime <- function() { return(as.integer(Sys.time())) }
-
-# get a formatted string of the timestamp (exclude colons as they are invalid
-# characters in Windows filenames)
-humanTime <- function() {  format(Sys.time(), "%Y%m%d-%H%M%OS")}
-
-# save the results to a file
-saveData <- function(data) {
-  fileName <- sprintf("%s_%s.csv",humanTime(), digest::digest(data))
-  write.csv(x = data, file = file.path(responsesDir, fileName), row.names = FALSE, quote = TRUE)
-}
-
-# load all responses into a data.frame
-loadData <- function() {
-  files <- list.files(file.path(responsesDir), full.names = TRUE)
-  data <- lapply(files, read.csv, stringsAsFactors = FALSE)
-  #data <- dplyr::rbind_all(data)
-  data <- do.call(rbind, data)
-  data
-}
-
-# directory where responses get stored
-responsesDir <- file.path("responses")
 
 # CSS to use in the app
 appCSS <-
 ".mandatory_star { color: red; }
-.shiny-input-container { margin-top: 25px; }
-#submit_msg { margin-left: 15px; }
-#error { color: red; }
-#adminPanel { border: 4px solid #aaa; padding: 0 20px 20px; }"
+#error { color: red; }"
 
-# usernames that are admins
-adminUsers <- c("admin", "prof")
 
 panel_width = 2
 result_with = 10
+
 shinyApp(
-  ui = fluidPage(navbarPage("MATTEO",
-                            titlePanel("Proliferation assay curve"),
-                            p("This app is develop to help people to draw curves with R"),
-                            shinyjs::useShinyjs(),
-    shinyjs::inlineCSS(appCSS),
+  ui = fluidPage(
+    navbarPage("MC",
 
     tabPanel("Proliferation_assay",
-    fluidRow(
-      column(panel_width,
-             div(
-               id = "form",
-               textInput("experiment",         labelMandatory("Experiment"), ""),
-               numericInput("num_genes",       labelMandatory("Number of conditions"), 2, min=2),
-               numericInput("num_reps",        labelMandatory("Number of replicates"), 1, min=1),
-               numericInput("num_time_points", labelMandatory("Number of time points"), 2, min = 2),
-               numericInput("len_time_point",  labelMandatory("Time point length"), 24, min = 1),
-               actionButton("submit", "Submit", class = "btn-primary")
-               # ,
-#                shinyjs::hidden(
-#                  span(id = "submit_msg", "Submitting..."),
-#                  div(id = "error",
-#                      div(br(), tags$b("Error: "), span(id = "error_msg"))
-#                  )
-#                )
+             titlePanel("Proliferation assay curve"),
+             p("This app is develop to help people to draw curves with R"),
+             shinyjs::useShinyjs(),
+             shinyjs::inlineCSS(appCSS),
+             fluidRow(
+               column(panel_width,
+                      div(
+                           id = "form",
+                           textInput("experiment",         labelMandatory("Experiment"), ""),
+                           numericInput("num_genes",       labelMandatory("Number of conditions"), 2, min=2),
+                           numericInput("num_reps",        labelMandatory("Number of replicates"), 1, min=1),
+                           numericInput("num_time_points", labelMandatory("Number of time points"), 2, min = 2),
+                           numericInput("len_time_point",  labelMandatory("Time point length"), 24, min = 1),
+                           actionButton("submit", "Submit", class = "btn-primary")
              ),
              shinyjs::hidden(
                div(
                  id = "form_genes",
                  br(), 
                  uiOutput("genePanel"),
-                 actionButton("submit_gene", "GO!", class = "btn-primary")               #         DT::dataTableOutput("responsesTable") 
+                 actionButton("submit_gene", "GO!", class = "btn-primary") 
                )
-      )
-      ),
-      column(result_with,
+               )
+             ),
+             column(result_with,
              
              shinyjs::hidden(
                div(
@@ -105,7 +71,6 @@ shinyApp(
 
                )
              ),
-
             shinyjs::hidden(
               div(
                 id = "form_plot",
@@ -114,19 +79,62 @@ shinyApp(
                 downloadButton('downloadPlot', 'Download Plot')
               )
             )
-      )
-    )
-    ),
-  tabPanel("Expression"
-  )
-  )
-
-    
-  ),
+            )
+            )
+            )
+ ,
+ tabPanel("Expression",
+          titlePanel("Expression bar plot"),
+          p("This app is develop to help people to draw bars with R"),
+          shinyjs::useShinyjs(),
+          shinyjs::inlineCSS(appCSS),
+          fluidRow(
+            column(panel_width,
+                   div(
+                     id = "expr_form",
+                     textInput("expr_experiment",         labelMandatory("Experiment"), ""),
+                     numericInput("num_expr_cond",       labelMandatory("Number of conditions"), 2, min=2),
+                     numericInput("num_expr_genes",        labelMandatory("Number of genes"), 2, min=2),
+                     actionButton("expr_submit", "Submit", class = "btn-primary")
+                   ),
+                   shinyjs::hidden(
+                     div(
+                       id = "expr_form_genes",
+                       br(), 
+                       uiOutput("expr_condPanel"),
+                       uiOutput("expr_genePanel"),
+                       actionButton("expr_submit_gene", "GO!", class = "btn-primary") 
+                     )
+                   )
+            )
+             ,
+             column(result_with,
+                   shinyjs::hidden(
+                     div(
+                       id = "expr_form_table",
+                        h4("Insert your data here"),
+                        htable("expr_dataTable", colHeaders="provided", rowNames = 'provided'), br(), 
+                        actionButton("expr_submit_table", "Plot data", class = "btn-primary"),
+                        downloadButton('expr_downloadData', 'Download Data')
+                       
+                     )
+                   ),
+                   shinyjs::hidden(
+                     div(
+                       id = "expr_form_plot", br(), 
+                       plotOutput("expr_assay"),
+                       downloadButton('expr_downloadPlot', 'Download Plot')
+                     )
+                   )
+             )
+          )
+          )
+ )
+ ),
   
   server = function(input, output, session) {
     
-    current = reactiveValues(tbl =NULL, num_genes=NULL, num_reps=NULL, num_time_points=NULL)
+    current = reactiveValues(tbl =NULL, etbl =NULL, num_genes=NULL, num_reps=NULL, num_time_points=NULL)
     
     # Enable the Submit button when all mandatory fields are filled out
     observe({
@@ -256,6 +264,7 @@ shinyApp(
         write.table(current$tbl, file, sep="\t",quote = F, row.names = F)
       }
     )
+    
     output$downloadPlot <- downloadHandler(
       filename = function() { paste(input$experiment, '.pdf', sep='') },
       content = function(file) {
@@ -263,5 +272,94 @@ shinyApp(
         print(current$p)
         dev.off()
       })
+    
+    observeEvent(input$expr_submit, {
+      print("STICAZZI")
+      shinyjs::disable("expr_submit")
+      shinyjs::show("expr_form_genes")
+    })
+    
+    output$expr_condPanel <- renderUI({
+      ifelse(input$num_expr_cond>0,
+             return(lapply(1:input$num_expr_cond, function(i) textInput( paste0("exprCond_",i), "Insert CONDITION", ""))),
+             return()
+      )
+    })
+    output$expr_genePanel <- renderUI({
+      ifelse(input$num_expr_genes>0,
+             return(lapply(1:input$num_expr_genes, function(i) textInput( paste0("exprGene_",i), "Insert GENE", ""))),
+             return()
+      )
+    })
+    
+    observeEvent(input$expr_submit_gene, {
+        genes = c()
+        for(i in grep("exprGene_", names(input)) ) genes = c(genes, input[[ names(input)[i] ]][1] )
+        cond = c()
+        for(i in grep("exprCond_", names(input)) ) cond = c(cond, input[[ names(input)[i] ]][1] )
+        current$etbl <- data.frame(matrix(0, nr=input$num_expr_cond, nc=input$num_expr_genes))
+        colnames(current$etbl) = cond
+        rownames(current$etbl) = genes
+        print(current$etbl)
+        shinyjs::show("expr_form_table")
+        shinyjs::show("expr_form_plot")
+        shinyjs::disable("expr_submit_genes")
+    })
+    
+    output$expr_dataTable = renderHtable({
+      if(length(grep("exprGene_", names(input))>0)){
+        if(!is.null(input$expr_dataTable)){
+          current$etbl<<-input$expr_dataTable
+        }
+        return(current$etbl)
+      }else{
+        return()
+      }
+    })
+    
+    output$expr_assay = renderPlot({
+      if(input$expr_submit_table>0){
+        print("ACHI")
+        data = current$etbl
+        for(i in 1:ncol(data)) data[,i] = as.numeric(data[,i])
+        print(str(data))
+        pe = data %>% mutate(treatment = rownames(data)) %>% 
+          gather(key = gene, value = ratio, 1:2) %>% 
+          mutate(ratio = signif(ratio, 1)) %>% 
+          ggplot(aes(x = treatment, y = ratio, group = gene, fill = gene, label = ratio, ymax = max(data) * 1.05)) + 
+          geom_bar(position = "dodge", stat = "identity") + 
+          geom_text(position = position_dodge(width = 1), vjust = -1) +
+          labs(x = "", y = "Normalized Ratio", title = "") + 
+          guides(fill = guide_legend(title = "")) + 
+          theme_bw() + 
+          theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), text = element_text(size = 20)) + 
+          theme(legend.justification = c(1,1), legend.position = c(1,1))
+        
+        current$pe<<-pe
+        return(pe)  
+      }else{
+        return()
+      }
+      
+    })
+    
+    output$expr_downloadData <- downloadHandler(
+      filename = function() { paste(input$expr_experiment, '.tsv', sep='') },
+      content = function(file) {
+        write.table(current$etbl, file, sep="\t",quote = F, row.names = F)
+      }
+    )
+    
+    output$expr_downloadPlot <- downloadHandler(
+      filename = function() { paste(input$expr_experiment, '.pdf', sep='') },
+      content = function(file) {
+        pdf(file,w=12,h=8)
+        print(current$pe)
+        dev.off()
+      })
+    
+    
+    
   }
+
 )
