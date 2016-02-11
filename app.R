@@ -4,7 +4,7 @@ library(matrixStats)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
-
+library(reshape2)
 options(scipen=3)
 
 
@@ -94,7 +94,7 @@ shinyApp(
                      id = "expr_form",
                      textInput("expr_experiment",         labelMandatory("Experiment"), ""),
                      numericInput("num_expr_cond",       labelMandatory("Number of conditions"), 2, min=2),
-                     numericInput("num_expr_genes",        labelMandatory("Number of genes"), 2, min=2),
+                     numericInput("num_expr_genes",        labelMandatory("Number of genes"), 1, min=1),
                      actionButton("expr_submit", "Submit", class = "btn-primary")
                    ),
                    shinyjs::hidden(
@@ -297,9 +297,10 @@ shinyApp(
         for(i in grep("exprGene_", names(input)) ) genes = c(genes, input[[ names(input)[i] ]][1] )
         cond = c()
         for(i in grep("exprCond_", names(input)) ) cond = c(cond, input[[ names(input)[i] ]][1] )
+        print(cond)
         current$etbl <- data.frame(matrix(0, nr=input$num_expr_cond, nc=input$num_expr_genes))
-        colnames(current$etbl) = cond
-        rownames(current$etbl) = genes
+        colnames(current$etbl) = genes
+        rownames(current$etbl) = cond
         print(current$etbl)
         shinyjs::show("expr_form_table")
         shinyjs::show("expr_form_plot")
@@ -323,10 +324,13 @@ shinyApp(
         data = current$etbl
         for(i in 1:ncol(data)) data[,i] = as.numeric(data[,i])
         print(str(data))
-        pe = data %>% mutate(treatment = rownames(data)) %>% 
-          gather(key = gene, value = ratio, 1:2) %>% 
-          mutate(ratio = signif(ratio, 1)) %>% 
-          ggplot(aes(x = treatment, y = ratio, group = gene, fill = gene, label = ratio, ymax = max(data) * 1.05)) + 
+        cn = colnames(data)
+        data = data %>% mutate(treatment = rownames(data))
+        data = melt(data, measure.vars = cn, id.var="treatment")
+        colnames(data)[2] = "gene"
+        data$value = as.numeric(data$value)
+        pe = 
+          ggplot(data, aes(x = treatment, y = signif(value, 1), group = gene, fill = gene, label = value, ymax = max(value) * 1.05)) + 
           geom_bar(position = "dodge", stat = "identity") + 
           geom_text(position = position_dodge(width = 1), vjust = -1) +
           labs(x = "", y = "Normalized Ratio", title = "") + 
